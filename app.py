@@ -4,6 +4,7 @@ from transformers.agents import stream_to_gradio
 from dataclasses import asdict
 import os
 from dotenv import load_dotenv
+import re
 
 # Load environment variables
 load_dotenv()
@@ -17,6 +18,13 @@ client = InferenceClient(
     "HuggingFaceH4/zephyr-7b-beta",
     token=HUGGINGFACE_TOKEN
 )
+
+def is_valid_url(text):
+    """Check if the text contains a URL."""
+    url_pattern = re.compile(
+        r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    )
+    return bool(url_pattern.search(text))
 
 def process_url(url):
     """Process the URL and generate quiz questions"""
@@ -42,6 +50,13 @@ def interact_with_agent(prompt, history):
     # Add user message
     messages.append({"role": "user", "content": prompt})
     yield messages
+    
+    # Check if input contains URL
+    if not is_valid_url(prompt):
+        bot_message = {"role": "assistant", "content": "Please provide a valid URL to generate quiz questions."}
+        messages.append(bot_message)
+        yield messages
+        return
     
     # Generate bot response
     response = client.text_generation(
