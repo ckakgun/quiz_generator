@@ -1,13 +1,13 @@
 import os
 import re
-from typing import List
+from typing import List, Dict
 
 import gradio as gr
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from langchain_community.llms import HuggingFaceHub
-from langchain.chains import LLMChain
+from langchain_huggingface import HuggingFaceEndpoint
+from langchain.chains.llm import LLMChain
 from langchain.prompts import PromptTemplate
 
 # Load environment variables
@@ -19,13 +19,36 @@ if not HUGGINGFACE_API_TOKEN:
     raise ValueError("HUGGINGFACE_API_TOKEN not found in environment variables")
 
 # Initialize LLM
-llm = HuggingFaceHub(
-    repo_id="meta-llama/Llama-2-7b-chat-hf",
+llm = HuggingFaceEndpoint(
+    endpoint_url="https://api-inference.huggingface.co/models/Qwen/Qwen2.5-1.5B-Instruct",
     huggingfacehub_api_token=HUGGINGFACE_API_TOKEN,
-    model_kwargs={"temperature": 0.7}
+    task="text-generation",
+    temperature=0.7,
+    top_p=0.9,
+    model_kwargs={
+        "max_length": 2048,
+    }
 )
 
-class ContentExtractor:
+class WelcomeAgent:
+    
+    """Agent responsible for user interaction and welcome messages."""
+
+    @staticmethod
+    def get_welcome_message() -> str:
+        return """👋 Hi! I'm your quiz assistant. I can create interactive quizzes from any web content.
+
+Just share a URL with me, and I'll generate multiple-choice questions to help you learn!"""
+
+    @staticmethod
+    def validate_url(text: str) -> bool:
+        """Check if the text contains a valid URL."""
+        url_pattern = re.compile(
+            r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+        )
+        return bool(url_pattern.search(text))
+
+class ContentAgent:
     """Responsible for fetching and processing URL content."""
     
     @staticmethod
@@ -50,8 +73,9 @@ class ContentExtractor:
             
         except Exception as e:
             return f"Error fetching URL: {str(e)}"
+        
 
-class QuizGenerator:
+class QuizGeneratorAgent:
     """Responsible for generating quiz questions."""
     
     def __init__(self, llm):
@@ -59,7 +83,7 @@ class QuizGenerator:
         self.prompt = PromptTemplate(
             input_variables=["content"],
             template="""Based on the following content, generate 5 quiz questions with their answers. 
-            Make questions engaging and diverse (multiple choice, true/false, open-ended).
+            Make questions engaging and diverse (multiple choice, true/false).
             Format each question with its answer exactly like this:
             Q1: [Question]
             A1: [Answer]
@@ -106,80 +130,51 @@ class QuizGenerator:
             formatted_quiz += "</details>\n\n"
         
         return formatted_quiz
+    
+class ScoringAgent:
+    """Agent responsible for scoring quiz answers."""
 
-# Initialize components
-content_extractor = ContentExtractor()
-quiz_generator = QuizGenerator(llm)
+    @staticmethod
+    def score_quiz(user_answers: List[str], questions: List[Dict]) -> Dict:
+        """Score user's quiz answers."""
+        pass
 
-def is_valid_url(text: str) -> bool:
-    """Check if the text contains a URL."""
-    url_pattern = re.compile(
-        r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-    )
-    return bool(url_pattern.search(text))
+class QuizApp:
+    """Agent responsible for quiz generation."""
 
-def welcome_message() -> str:
-    """Returns the welcome message displayed when the application starts."""
-    return """
-    # 🎯 Welcome to the Quiz Generator!
-    
-    This application uses LLAMA 2 to create interactive quizzes from web content.
-    
-    ### How it works:
-    1. 🤖 Content Extractor fetches and processes the webpage
-    2. 🧠 Quiz Generator creates engaging questions using LLAMA 2
-    3. 📝 The system formats a beautiful interactive quiz
-    
-    ### How to use:
-    1. 🔗 Paste a URL in the textbox below
-    2. ⏳ Wait for processing
-    3. 👆 Click on answers to reveal them
-    """
+    def __init__(self):
+        self.welcome_agent = WelcomeAgent()
+        self.content_agent = ContentAgent()
+        self.quiz_generator = QuizGeneratorAgent(llm)
+        self.scoring_agent = ScoringAgent()
 
-def interact_with_system(prompt: str, history: List[dict]) -> dict:
-    """Handles chat interaction using LangChain components.
+    def generate_quiz(self, content: str) -> str:
+        """Generate quiz questions from content."""
+        return self.quiz_generator.generate_quiz(content)
 
-    Args:
-        prompt (str): User's input message
-        history (list): Chat history
-    """
-    messages = []
-    
-    # Add user message
-    messages.append({"role": "user", "content": prompt})
-    yield messages
-    
-    # Check if input contains URL
-    if not is_valid_url(prompt):
-        bot_message = {"role": "assistant", "content": "⚠️ Please provide a valid URL to generate quiz questions."}
-        messages.append(bot_message)
-        yield messages
-        return
-    
-    # Extract content from URL
-    content = content_extractor.fetch_url_content(prompt)
-    if content.startswith("Error"):
-        bot_message = {"role": "assistant", "content": f"❌ {content}"}
-        messages.append(bot_message)
-        yield messages
-        return
-    
-    # Generate quiz
-    quiz = quiz_generator.generate_quiz(content)
-    
-    bot_message = {"role": "assistant", "content": quiz}
-    messages.append(bot_message)
-    yield messages
+    def create_interface(self):
+        interface = gr.ChatInterface(
+            self.generate_quiz,
+            title="Quiz Generator",
+            textbox=gr.Textbox(
+                placeholder="Paste a URL here to generate quiz questions",
+                container=False,
+                scale=7
+            ),
+            chatbot=gr.Chatbot(
+                value=[[None,self.welcome_agent.get_welcome_message()]],
+                elem_id="chatbot",
+                height=450,
+                show_label=False,
+                container=True
+            ),
+            type="messages"
+        )
+        interface.launch()
 
-# Configure the interface
-main_interface = gr.ChatInterface(
-    interact_with_system,
-    title="🎓 LLAMA 2 Quiz Generator",
-    textbox=gr.Textbox(
-        placeholder="Paste a URL here to generate quiz questions",
-        container=False,
-        scale=7
-    ),
-    description=welcome_message(),
-    type="messages"
-).launch()
+    def score_quiz(self, user_answers: List[str], questions: List[Dict]) -> Dict:
+        """Score user's quiz answers."""
+        return self.scoring_agent.score_quiz(user_answers, questions)
+    
+app = QuizApp()
+app.create_interface()
