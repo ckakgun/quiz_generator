@@ -36,7 +36,7 @@ An intelligent web application that automatically generates interactive quizzes 
 
 1. Clone the repository:
 ```bash
-git clone https://huggingface.co/spaces/[your-username]/quiz-generator
+git clone https://huggingface.co/spaces/ckakgun/quiz-generator
 cd quiz-generator
 ```
 
