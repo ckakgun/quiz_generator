@@ -8,7 +8,7 @@ import requests
 from dotenv import load_dotenv
 from langchain_core.prompts import PromptTemplate
 from llama_index.core import VectorStoreIndex
-from llama_index.readers.web import TrafilaturaWebReader
+from llama_index.readers.web import SimpleWebPageReader
 from langchain_openai import ChatOpenAI
 
 # Load environment variables
@@ -56,7 +56,7 @@ class WelcomeAgent:
 class ContentAgent:
     """Responsible for fetching and processing URL content using LlamaIndex."""
     def __init__(self):
-        self.loader = TrafilaturaWebReader()
+        self.loader = SimpleWebPageReader()
         
     def fetch_url_content(self, url: str) -> str:
         """Fetch and process content from URL using LlamaIndex."""

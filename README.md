@@ -26,11 +26,11 @@ An intelligent web application that automatically generates interactive quizzes 
 
 ## Tech Stack
 
-- **Frontend**: Gradio
-- **Backend**: Python
-- **NLP Processing**: LlamaIndex
-- **AI Model**: OpenAI GPT
-- **Web Scraping**: Trafilatura
+- **Frontend**: Gradio 4.0+
+- **Backend**: Python 3.9+
+- **NLP Processing**: LlamaIndex Core
+- **AI Model**: OpenAI GPT-4
+- **Web Scraping**: SimpleWebPageReader
 
 ## Installation
 
@@ -78,6 +78,18 @@ quiz-generator/
     └── demo.png    # Application screenshot
 ```
 
+## Dependencies
+
+Key dependencies include:
+- gradio>=4.0.0
+- llama-index-core
+- llama-index-readers-web
+- langchain-core
+- langchain-openai
+- python-dotenv
+- openai
+- requests
+
 ## Environment Variables
 
 | Variable | Description | Required |
@@ -94,6 +106,14 @@ To contribute to this project:
 4. Push to the branch
 5. Create a Pull Request
 
+## Troubleshooting
+
+Common issues and solutions:
+
+1. **ModuleNotFoundError**: Make sure you have installed all dependencies with `pip install -r requirements.txt`
+2. **API Key Error**: Ensure your OpenAI API key is properly set in the `.env` file
+3. **Web Content Extraction Issues**: Some websites may block content extraction. Try with different URLs if you encounter issues.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -103,8 +123,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [LlamaIndex](https://www.llamaindex.ai/) for document processing
 - [OpenAI](https://openai.com/) for the language model
 - [Gradio](https://gradio.app/) for the web interface
-
-
 
 ---
 *Made with ❤️ for learning*

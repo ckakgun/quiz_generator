@@ -1,7 +1,9 @@
 gradio>=4.0.0
 python-dotenv
 langchain-core
-llama-index
+llama-index-core
+llama-index-readers-web
 trafilatura
 langchain-openai
 openai
+requests
