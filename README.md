@@ -93,9 +93,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [OpenAI](https://openai.com/) for the language model
 - [Gradio](https://gradio.app/) for the web interface
 
-## Author
 
-[Your Name] - [Your Email/Contact]
 
 ---
 *Made with ❤️ for learning*
