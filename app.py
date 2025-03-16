@@ -2,8 +2,6 @@
 
 import re
 import sys
-import os
-import requests
 
 import gradio as gr
 from dotenv import load_dotenv
@@ -44,7 +42,7 @@ class WelcomeAgent:
         """Return the welcome message displayed to users when they first interact with the quiz assistant."""
         return """👋 Hi! I'm your quiz assistant. I can create interactive quizzes from any web content.
 
-Just share a URL with me, and I'll generate multiple-choice questions to help you learn!"""
+        Just share a URL with me, and I'll generate multiple-choice questions to help you learn!"""
 
     @staticmethod
     def validate_url(text: str) -> bool:
@@ -434,11 +432,9 @@ class QuizApp:
             )
 
         interface.launch(
-            share=False,
-            show_error=True,
-            server_name="127.0.0.1",
+            server_name="0.0.0.0",
             server_port=7860,
-            quiet=False
+            share=False
         )
 
 if __name__ == "__main__":
