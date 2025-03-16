@@ -1,9 +1,10 @@
 """A web-based quiz generator that creates interactive questions from URL content using LlamaIndex and Gemma."""
 
-import re
+import re 
 import sys
 
 import gradio as gr
+import requests
 from dotenv import load_dotenv
 from langchain_core.prompts import PromptTemplate
 from llama_index.core import VectorStoreIndex
@@ -22,7 +23,7 @@ def initialize_model():
             max_tokens=512,
             top_p=0.9,
         )
-    except Exception as e:
+    except requests.RequestException as e:
         error_msg = str(e)
         print(f"Error initializing the model: {error_msg}")
         print("\nTroubleshooting steps:")
@@ -71,7 +72,7 @@ class ContentAgent:
             content = f"Summary:\n{str(summary)}\n\nDetailed Content:\n{documents[0].text}"
             return content[:4000]
             
-        except Exception as e:
+        except requests.RequestException as e:
             return f"Error fetching URL: {str(e)}"
 
 class QuizGeneratorAgent:
@@ -410,13 +411,13 @@ class QuizApp:
             
             
             
-            submit_btn.click(
+            submit_btn.click(  
                 fn=handle_submit,
                 inputs=[msg, chatbot],
                 outputs=[chatbot, msg]
             )
             
-            msg.submit(
+            msg.submit( 
                 fn=handle_submit,
                 inputs=[msg, chatbot],
                 outputs=[chatbot, msg]
