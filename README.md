@@ -24,47 +24,71 @@ An intelligent web application that automatically generates interactive quizzes 
 - 📊 **Real-time Scoring**: Instant feedback and score tracking
 - 🔄 **Continuous Learning**: Learn from any web content interactively
 
-## Tech Stack
+## Prerequisites
 
-- **Frontend**: Gradio 4.0+
-- **Backend**: Python 3.9+
-- **NLP Processing**: LlamaIndex Core
-- **AI Model**: OpenAI GPT-4
-- **Web Scraping**: SimpleWebPageReader
+Before you begin, ensure you have:
+- Python 3.9 or higher installed
+- An OpenAI API key ([Get one here](https://platform.openai.com/api-keys))
+- Git installed (for GitHub installation)
 
-## Installation
+## Installation Options
+
+### Option 1: Running Locally via GitHub
 
 1. Clone the repository:
 ```bash
-git clone https://huggingface.co/spaces/ckakgun/quiz-generator
+git clone https://github.com/ckakgun/quiz-generator
 cd quiz-generator
 ```
 
-2. Install dependencies:
+2. Create and activate a virtual environment:
+```bash
+# On Windows
+python -m venv venv
+.\venv\Scripts\activate
+
+# On macOS/Linux
+python3 -m venv venv
+source venv/bin/activate
+```
+
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Set up environment variables:
+4. Create a .env file in the project root:
 ```bash
-# Create .env file and add your OpenAI API key
 echo "OPENAI_API_KEY=your-api-key-here" > .env
 ```
 
-4. Run the application:
+5. Run the application:
 ```bash
 python app.py
 ```
 
 The application will be available at `http://localhost:7860`
 
-## Usage
+### Option 2: Using Hugging Face Spaces
 
-1. Open the application in your web browser
+1. Visit the Space: [Quiz Generator on Hugging Face](https://huggingface.co/spaces/24-cka-ML/quiz-generator)
+
+2. To create your own instance:
+   - Click "Duplicate Space" on the top right
+   - In your duplicated Space's settings:
+     1. Go to "Repository Secrets"
+     2. Add a new secret:
+        - Name: `OPENAI_API_KEY`
+        - Value: Your OpenAI API key
+   - The Space will automatically rebuild and deploy
+
+## Usage Guide
+
+1. Access the application through your browser
 2. Paste any URL containing the content you want to create a quiz from
 3. Click "Submit" or press Enter
 4. Answer the generated multiple-choice questions
-5. Get instant feedback and final score
+5. Get instant feedback and see your final score
 
 ## Project Structure
 
@@ -73,9 +97,7 @@ quiz-generator/
 ├── app.py           # Main application file
 ├── requirements.txt # Project dependencies
 ├── .env            # Environment variables (not tracked in git)
-├── README.md       # Project documentation
-└── assets/         # Images and other assets
-    └── demo.png    # Application screenshot
+└── README.md       # Project documentation
 ```
 
 ## Dependencies
@@ -84,21 +106,37 @@ Key dependencies include:
 - gradio>=4.0.0
 - llama-index-core
 - llama-index-readers-web
+- llama-index-llms-openai
+- llama-index-embeddings-openai
 - langchain-core
 - langchain-openai
 - python-dotenv
 - openai
 - requests
 
-## Environment Variables
+## Troubleshooting
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| OPENAI_API_KEY | Your OpenAI API key | Yes |
+Common issues and solutions:
 
-## Development
+1. **ModuleNotFoundError**:
+   - Ensure you've installed all dependencies: `pip install -r requirements.txt`
+   - Make sure you're in the virtual environment
 
-To contribute to this project:
+2. **API Key Error**:
+   - Check if your OpenAI API key is correctly set in .env file (local) or Space secrets (Hugging Face)
+   - Verify the API key is valid and has sufficient credits
+
+3. **Web Content Extraction Issues**:
+   - Some websites may block content extraction
+   - Try with different URLs if you encounter issues
+   - Make sure the URL is accessible and contains readable content
+
+4. **Gradio Interface Issues**:
+   - Clear your browser cache
+   - Try a different browser
+   - Check if the port 7860 is available
+
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -106,23 +144,16 @@ To contribute to this project:
 4. Push to the branch
 5. Create a Pull Request
 
-## Troubleshooting
-
-Common issues and solutions:
-
-1. **ModuleNotFoundError**: Make sure you have installed all dependencies with `pip install -r requirements.txt`
-2. **API Key Error**: Ensure your OpenAI API key is properly set in the `.env` file
-3. **Web Content Extraction Issues**: Some websites may block content extraction. Try with different URLs if you encounter issues.
-
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License 
 
-## Acknowledgments
+## Support
 
-- [LlamaIndex](https://www.llamaindex.ai/) for document processing
-- [OpenAI](https://openai.com/) for the language model
-- [Gradio](https://gradio.app/) for the web interface
+If you encounter any issues or have questions:
+1. Check the Troubleshooting section above
+2. Open an issue on GitHub
+3. Ask on the Hugging Face Space discussion tab
 
 ---
 *Made with ❤️ for learning*
