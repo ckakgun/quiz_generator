@@ -1,3 +1,14 @@
+---
+title: Quiz Generator
+emoji: 📚
+colorFrom: indigo
+colorTo: purple
+sdk: gradio
+sdk_version: 4.0.0
+app_file: app.py
+pinned: false
+---
+
 # Quiz Generator
 
 ![Quiz Generator Interface](assets/demo.png)
