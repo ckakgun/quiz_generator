@@ -402,25 +402,26 @@ class QuizApp:
                 )
                 submit_btn = gr.Button("Submit", scale=1)
             
-            clear = gr.ClearButton([msg, chatbot], value="Clear")
             
             def handle_submit(message: str, history):
                 """Handle both quiz generation and answer submission."""
                 history = history or []
                 if not self.current_quiz or message.startswith('http'):
-                    return self.generate_quiz(message)
-                return self.submit_answer(message, history)
+                    return self.generate_quiz(message), ""
+                return self.submit_answer(message, history), ""
+            
+            
             
             submit_btn.click(
                 fn=handle_submit,
                 inputs=[msg, chatbot],
-                outputs=chatbot
+                outputs=[chatbot, msg]
             )
             
             msg.submit(
                 fn=handle_submit,
                 inputs=[msg, chatbot],
-                outputs=chatbot
+                outputs=[chatbot, msg]
             )
             
             gr.Examples(
@@ -437,7 +438,7 @@ class QuizApp:
             show_error=True,
             server_name="127.0.0.1",
             server_port=7860,
-            quiet=True
+            quiet=False
         )
 
 if __name__ == "__main__":
