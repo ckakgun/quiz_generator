@@ -3,7 +3,8 @@ python-dotenv
 langchain-core
 llama-index-core
 llama-index-readers-web
-trafilatura
+llama-index-llms-openai
 langchain-openai
 openai
 requests
+llama-index-embeddings-openai

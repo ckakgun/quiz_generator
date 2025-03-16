@@ -66,7 +66,7 @@ class ContentAgent:
                 raise ValueError("No content could be extracted from the URL")
             
             index = VectorStoreIndex.from_documents(documents)
-            query_engine = index.as_query_engine(llm=llm)
+            query_engine = index.as_query_engine()
             summary = query_engine.query("Summarize the main points of this content in 3-4 sentences.")
             
             content = f"Summary:\n{str(summary)}\n\nDetailed Content:\n{documents[0].text}"
