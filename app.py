@@ -2,12 +2,14 @@
 
 import re 
 import sys
+import os
 
 import gradio as gr
 import requests
 from dotenv import load_dotenv
 from langchain_core.prompts import PromptTemplate
-from llama_index.core import VectorStoreIndex
+from llama_index.core import VectorStoreIndex, Settings
+from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.readers.web import SimpleWebPageReader
 from langchain_openai import ChatOpenAI
 
@@ -17,6 +19,9 @@ load_dotenv()
 def initialize_model():
     """Initialize and return the LLM model."""
     try:
+        # Set up OpenAI embeddings
+        Settings.embed_model = OpenAIEmbedding()
+        
         return ChatOpenAI(
             model_name="gpt-4o-mini",
             temperature=0.7,
