@@ -1,13 +1,11 @@
-"""A web-based quiz generator that creates interactive questions from URL content using LlamaIndex and Gemma."""
+"""A web-based quiz generator that creates interactive questions from URL content using LlamaIndex and OpenAI."""
 
 import re 
-import sys
 import os
 
 import gradio as gr
 import requests
 from dotenv import load_dotenv
-from langchain_core.prompts import PromptTemplate
 from llama_index.core import VectorStoreIndex, Settings
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.readers.web import SimpleWebPageReader
@@ -15,30 +13,6 @@ from langchain_openai import ChatOpenAI
 
 # Load environment variables
 load_dotenv()
-
-def initialize_model():
-    """Initialize and return the LLM model."""
-    try:
-        # Set up OpenAI embeddings
-        Settings.embed_model = OpenAIEmbedding()
-        
-        return ChatOpenAI(
-            model_name="gpt-4o-mini",
-            temperature=0.7,
-            max_tokens=512,
-            top_p=0.9,
-        )
-    except requests.RequestException as e:
-        error_msg = str(e)
-        print(f"Error initializing the model: {error_msg}")
-        print("\nTroubleshooting steps:")
-        print("1. Make sure you have set OPENAI_API_KEY in your environment")
-        print("2. Check your internet connection")
-        sys.exit(1)
-
-# Initialize LLM
-llm = initialize_model()
-
 
 class WelcomeAgent:
     """Agent responsible for user interaction and welcome messages."""
@@ -48,7 +22,7 @@ class WelcomeAgent:
         """Return the welcome message displayed to users when they first interact with the quiz assistant."""
         return """👋 Hi! I'm your quiz assistant. I can create interactive quizzes from any web content.
 
-        Just share a URL with me, and I'll generate multiple-choice questions to help you learn!"""
+        First, please enter your OpenAI API key to start using the quiz generator."""
 
     @staticmethod
     def validate_url(text: str) -> bool:
@@ -86,31 +60,25 @@ class QuizGeneratorAgent:
     def __init__(self, language_model):
         """Initialize quiz generator with a language model."""
         self.llm = language_model
-        self.prompt = PromptTemplate.from_template(
-            """Based on the following content, generate 5 multiple choice questions with 4 options each. 
-            Make questions engaging and test understanding of key concepts.
-            Format each question exactly like this:
-            Q1: [Question]
-            Options:
-            a) [Option 1]
-            b) [Option 2]
-            c) [Option 3]
-            d) [Option 4]
-            Correct: [a/b/c/d]
-            
-            Content: {content}
-            """
-        )
-        self.chain = self.prompt | self.llm | self._format_response
-    
-    def _format_response(self, response) -> dict:
-        """Format the LLM response into structured quiz data."""
-        raw_text = response.content if hasattr(response, 'content') else str(response)
-        return self.parse_quiz_content(raw_text)
+        self.prompt_template = """Based on the following content, generate 5 multiple choice questions with 4 options each. 
+        Make questions engaging and test understanding of key concepts.
+        Format each question exactly like this:
+        Q1: [Question]
+        Options:
+        a) [Option 1]
+        b) [Option 2]
+        c) [Option 3]
+        d) [Option 4]
+        Correct: [a/b/c/d]
+        
+        Content: {content}
+        """
     
     def generate_quiz(self, content: str) -> dict:
         """Generate quiz questions from content."""
-        return self.chain.invoke({"content": content})
+        prompt = self.prompt_template.format(content=content)
+        response = self.llm.invoke(prompt)
+        return self.parse_quiz_content(response.content)
     
     @staticmethod
     def parse_quiz_content(quiz_text: str) -> dict:
@@ -284,26 +252,54 @@ class QuizApp:
 
     def __init__(self):
         self.welcome_agent = WelcomeAgent()
-        self.content_agent = ContentAgent()
-        self.quiz_generator = QuizGeneratorAgent(llm)
-        self.submission_agent = QuizSubmissionAgent()
-        self.score_calculator = ScoreCalculatorAgent()
+        self.content_agent = None
+        self.quiz_generator = None
+        self.submission_agent = None
+        self.score_calculator = None
         self.current_quiz = None
+        self.api_key_validated = False
+
+    def validate_api_key(self, api_key: str) -> tuple[bool, str]:
+        """Validate OpenAI API key."""
+        if not api_key or len(api_key.strip()) < 20:  # Basic length check
+            return False, "Please enter a valid OpenAI API key"
+            
+        try:
+            os.environ["OPENAI_API_KEY"] = api_key.strip()
+            # Initialize components only after API key is validated
+            Settings.embed_model = OpenAIEmbedding()
+            llm = ChatOpenAI(
+                model_name="gpt-4-turbo-preview",
+                temperature=0.7,
+                max_tokens=512,
+                top_p=0.9,
+            )
+            
+            # Initialize components
+            self.content_agent = ContentAgent()
+            self.quiz_generator = QuizGeneratorAgent(llm)
+            self.submission_agent = QuizSubmissionAgent()
+            self.score_calculator = ScoreCalculatorAgent()
+            self.api_key_validated = True
+            
+            return True, "API key validated successfully! You can now start generating quizzes."
+        except Exception as e:
+            return False, f"Invalid API key or error occurred: {str(e)}"
 
     def generate_quiz(self, message: str):
         """Generate quiz questions from content."""
+        if not self.api_key_validated:
+            return [], "Please enter your OpenAI API key first to start using the quiz generator."
+            
         if not message:
-            return [{"role": "assistant", "content": "Please provide some content or a URL to generate quiz questions."}]
+            return [], "Please provide some content or a URL to generate quiz questions."
             
         try:
             if self.welcome_agent.validate_url(message):
                 print("Fetching and processing URL content...")
                 content = self.content_agent.fetch_url_content(message)
                 if content.startswith("Error"):
-                    return [
-                        {"role": "user", "content": message},
-                        {"role": "assistant", "content": content}
-                    ]
+                    return [], content
             else:
                 content = message
             
@@ -315,33 +311,15 @@ class QuizApp:
             return [
                 {"role": "user", "content": message},
                 {"role": "assistant", "content": "Quiz generated! Let's begin:\n\n" + initial_question}
-            ]
+            ], ""
             
-        except requests.RequestException as e:
-            return [
-                {"role": "user", "content": message},
-                {"role": "assistant", "content": f"Error fetching URL: Network or server error - {str(e)}"}
-            ]
-        except ValueError as e:
-            return [
-                {"role": "user", "content": message},
-                {"role": "assistant", "content": f"Error processing content: {str(e)}"}
-            ]
-        except (KeyError, IndexError) as e:
-            return [
-                {"role": "user", "content": message},
-                {"role": "assistant", "content": f"Error parsing quiz content: {str(e)}"}
-            ]
-        except TimeoutError as e:
-            return [
-                {"role": "user", "content": message},
-                {"role": "assistant", "content": "The request timed out. Please try again or try with a different URL."}
-            ]
+        except Exception as e:
+            return [], f"Error: {str(e)}"
 
     def submit_answer(self, answer: str, history):
         """Handle user's answer submission."""
         if not self.current_quiz or self.current_quiz['quiz_completed']:
-            return history
+            return history, gr.update(value="", interactive=True)
 
         current_idx = self.current_quiz['current_question']
         current_question = self.current_quiz['questions'][current_idx]
@@ -354,11 +332,9 @@ class QuizApp:
         )
         
         if submission_result['status'] == 'error':
-            history.extend([
-                {"role": "user", "content": answer},
-                {"role": "assistant", "content": submission_result['message']}
-            ])
-            return history
+            history.append({"role": "user", "content": answer})
+            history.append({"role": "assistant", "content": submission_result['message']})
+            return history, gr.update(value="", interactive=True)
         
         # Move to next question
         self.current_quiz['current_question'] += 1
@@ -370,28 +346,35 @@ class QuizApp:
             score_results = self.score_calculator.calculate_score(
                 self.submission_agent.get_all_submissions()
             )
-            history.extend([
-                {"role": "user", "content": answer},
-                {"role": "assistant", "content": score_results['summary']}
-            ])
-            return history
+            history.append({"role": "user", "content": answer})
+            history.append({"role": "assistant", "content": score_results['summary']})
+            return history, gr.update(value="", interactive=True)
         
         # Show next question
         next_question = self.quiz_generator.format_current_question(self.current_quiz)
-        history.extend([
-            {"role": "user", "content": answer},
-            {"role": "assistant", "content": next_question}
-        ])
-        return history
+        history.append({"role": "user", "content": answer})
+        history.append({"role": "assistant", "content": next_question})
+        return history, gr.update(value="", interactive=True)
 
     def create_interface(self):
         """Create and launch the Gradio chat interface for the quiz application."""
         with gr.Blocks(title="Quiz Generator") as interface:
             gr.Markdown("# Quiz Generator")
-            gr.Markdown("Share a URL or paste content to generate interactive quiz questions.")
+            gr.Markdown("First, enter your OpenAI API key to start.")
+            
+            with gr.Row():
+                api_key_input = gr.Textbox(
+                    placeholder="Enter your OpenAI API key here",
+                    type="password",
+                    label="OpenAI API Key",
+                    scale=4
+                )
+                validate_btn = gr.Button("Validate Key", scale=1)
+            
+            api_status = gr.Markdown("⚠️ Please enter your OpenAI API key to start")
             
             chatbot = gr.Chatbot(
-                value=[{"role": "assistant", "content": self.welcome_agent.get_welcome_message()}],
+                value=[],
                 height=450,
                 show_label=False,
                 container=True,
@@ -400,29 +383,70 @@ class QuizApp:
             
             with gr.Row():
                 msg = gr.Textbox(
-                    placeholder="Paste a URL here to generate quiz questions, or enter a/b/c/d to answer",
+                    placeholder="After validating API key, paste a URL here to generate quiz questions, or enter a/b/c/d to answer",
                     container=False,
-                    scale=7
+                    scale=7,
+                    interactive=False
                 )
-                submit_btn = gr.Button("Submit", scale=1)
+                submit_btn = gr.Button("Submit", scale=1, interactive=False)
             
+            def validate_key(api_key):
+                """Validate OpenAI API key and update UI accordingly."""
+                try:
+                    is_valid, message = self.validate_api_key(api_key)
+                    if is_valid:
+                        return {
+                            api_status: gr.Markdown("✅ " + message),
+                            msg: gr.update(interactive=True),
+                            submit_btn: gr.update(interactive=True),
+                            chatbot: [{"role": "assistant", "content": self.welcome_agent.get_welcome_message()}]
+                        }
+                    return {
+                        api_status: gr.Markdown("❌ " + message),
+                        msg: gr.update(interactive=False),
+                        submit_btn: gr.update(interactive=False),
+                        chatbot: []
+                    }
+                except Exception as e:
+                    return {
+                        api_status: gr.Markdown("❌ Error validating key: " + str(e)),
+                        msg: gr.update(interactive=False),
+                        submit_btn: gr.update(interactive=False),
+                        chatbot: []
+                    }
             
-            def handle_submit(message: str, history):
+            def handle_submit(message, history):
                 """Handle both quiz generation and answer submission."""
+                if not self.api_key_validated:
+                    return history, ""
+                    
                 history = history or []
                 if not self.current_quiz or message.startswith('http'):
-                    return self.generate_quiz(message), ""
-                return self.submit_answer(message, history), ""
+                    new_history, error = self.generate_quiz(message)
+                    if error:
+                        history.append({"role": "user", "content": message})
+                        history.append({"role": "assistant", "content": error})
+                        return history, gr.update(value="", interactive=True)
+                    return new_history, gr.update(value="", interactive=True)
+                
+                history, _ = self.submit_answer(message, history)
+                return history, gr.update(value="", interactive=True)
             
+            # Event handlers
+            validate_btn.click(
+                fn=validate_key,
+                inputs=[api_key_input],
+                outputs=[api_status, msg, submit_btn, chatbot]
+            )
             
-            
-            submit_btn.click(  
+            submit_btn.click(
                 fn=handle_submit,
                 inputs=[msg, chatbot],
                 outputs=[chatbot, msg]
             )
             
-            msg.submit( 
+            # Also handle Enter key in message box
+            msg.submit(
                 fn=handle_submit,
                 inputs=[msg, chatbot],
                 outputs=[chatbot, msg]
@@ -439,8 +463,8 @@ class QuizApp:
 
         interface.launch(
             server_name="0.0.0.0",
-            server_port=7860,
-            share=False
+            share=True,
+            show_error=True
         )
 
 if __name__ == "__main__":

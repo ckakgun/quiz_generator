@@ -29,11 +29,8 @@ An intelligent web application that automatically generates interactive quizzes 
 Before you begin, ensure you have:
 - Python 3.9 or higher installed
 - An OpenAI API key ([Get one here](https://platform.openai.com/api-keys))
-- Git installed (for GitHub installation)
 
-## Installation Options
-
-### Option 1: Running Locally via GitHub
+## Installation
 
 1. Clone the repository:
 ```bash
@@ -57,92 +54,46 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Create a .env file in the project root:
-```bash
-echo "OPENAI_API_KEY=your-api-key-here" > .env
-```
+## Usage
 
-5. Run the application:
+1. Run the application:
 ```bash
 python app.py
 ```
 
-The application will be available at `http://localhost:7860`
+2. Open your browser and go to `http://localhost:7862`
 
-### Option 2: Using Hugging Face Spaces
+3. Enter your OpenAI API key when prompted
 
-1. Visit the Space: [Quiz Generator on Hugging Face](https://huggingface.co/spaces/24-cka-ML/quiz-generator)
+4. Paste any URL or content to generate a quiz
 
-2. To create your own instance:
-   - Click "Duplicate Space" on the top right
-   - In your duplicated Space's settings:
-     1. Go to "Repository Secrets"
-     2. Add a new secret:
-        - Name: `OPENAI_API_KEY`
-        - Value: Your OpenAI API key
-   - The Space will automatically rebuild and deploy
-
-## Usage Guide
-
-1. Access the application through your browser
-2. Paste any URL containing the content you want to create a quiz from
-3. Click "Submit" or press Enter
-4. Answer the generated multiple-choice questions
-5. Get instant feedback and see your final score
-
-## Project Structure
-
-```
-quiz-generator/
-├── app.py           # Main application file
-├── requirements.txt # Project dependencies
-├── .env            # Environment variables (not tracked in git)
-└── README.md       # Project documentation
-```
+5. Answer the questions and get instant feedback
 
 ## Dependencies
 
-Key dependencies include:
-- gradio>=4.0.0
-- llama-index-core
-- llama-index-readers-web
-- llama-index-llms-openai
-- llama-index-embeddings-openai
-- langchain-core
-- langchain-openai
-- python-dotenv
-- openai
-- requests
+Core dependencies:
+- `gradio`: Web interface framework
+- `openai`: OpenAI API client
+- `langchain-openai`: LangChain OpenAI integration
+- `llama-index-core`: Core LlamaIndex functionality
+- `llama-index-readers-web`: Web content extraction
+- `llama-index-embeddings-openai`: OpenAI embeddings support
+- `python-dotenv`: Environment variable management
+- `requests`: HTTP client
 
 ## Troubleshooting
 
 Common issues and solutions:
 
-1. **ModuleNotFoundError**:
-   - Ensure you've installed all dependencies: `pip install -r requirements.txt`
-   - Make sure you're in the virtual environment
+1. **OpenAI API Key Issues**:
+   - Make sure you've entered a valid OpenAI API key
+   - Check if your API key has sufficient credits
+   - Ensure you have billing set up in your OpenAI account
 
-2. **API Key Error**:
-   - Check if your OpenAI API key is correctly set in .env file (local) or Space secrets (Hugging Face)
-   - Verify the API key is valid and has sufficient credits
-
-3. **Web Content Extraction Issues**:
+2. **Web Content Extraction Issues**:
    - Some websites may block content extraction
    - Try with different URLs if you encounter issues
-   - Make sure the URL is accessible and contains readable content
-
-4. **Gradio Interface Issues**:
-   - Clear your browser cache
-   - Try a different browser
-   - Check if the port 7860 is available
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+   - Make sure the URL is accessible
 
 ## License
 
@@ -150,10 +101,10 @@ This project is licensed under the MIT License
 
 ## Support
 
-If you encounter any issues or have questions:
+If you encounter any issues:
 1. Check the Troubleshooting section above
 2. Open an issue on GitHub
-3. Ask on the Hugging Face Space discussion tab
+3. Make sure your dependencies are up to date
 
 ---
 *Made with ❤️ for learning*
